@@ -94,7 +94,7 @@ def toggle_speed_window():
 
     speed_window = tk.Toplevel(ventana)
     speed_window.title("Typing Speed")
-    speed_window.resizable(False, False)
+    speed_window.resizable(True, True)
     speed_window.configure(bg=GRIS)
     speed_window.transient(ventana)
 
