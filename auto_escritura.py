@@ -10,6 +10,16 @@ from PIL import Image, ImageDraw, ImageFont, ImageTk
 GRIS = "#3C3C3C"
 GRIS_CLARO = "#5A5A5A"
 
+SPEED_PRESETS = [
+    ("Very Slow", 0.15),
+    ("Slow",      0.08),
+    ("Normal",    0.03),
+    ("Fast",      0.01),
+    ("Turbo",     0.003),
+]
+speed_idx = 2      # default: Normal
+speed_window = None
+
 # Event flag used to signal the typing thread to stop
 detener = threading.Event()
 
@@ -46,7 +56,7 @@ def iniciar_escritura():
                     break
                 if ord(char) < 128:
                     # ASCII characters are typed directly
-                    pyautogui.typewrite(char, interval=0.03)
+                    pyautogui.typewrite(char, interval=SPEED_PRESETS[speed_idx][1])
                 else:
                     # Non-ASCII characters (accents, symbols) are pasted via clipboard
                     ventana.clipboard_clear()
@@ -75,6 +85,76 @@ def detener_escritura():
     detener.set()
 
 
+def toggle_speed_window():
+    global speed_window
+    if speed_window is not None and speed_window.winfo_exists():
+        speed_window.destroy()
+        speed_window = None
+        return
+
+    speed_window = tk.Toplevel(ventana)
+    speed_window.title("Typing Speed")
+    speed_window.resizable(False, False)
+    speed_window.configure(bg=GRIS)
+    speed_window.transient(ventana)
+
+    ventana.update_idletasks()
+    wx = ventana.winfo_x() + (ventana.winfo_width() - 320) // 2
+    wy = ventana.winfo_y() + 55
+    speed_window.geometry(f"320x118+{wx}+{wy}")
+
+    name_var = tk.StringVar(value=SPEED_PRESETS[speed_idx][0])
+    ms_var   = tk.StringVar(value=f"{int(SPEED_PRESETS[speed_idx][1] * 1000)} ms / key")
+
+    timeline = tk.Canvas(speed_window, width=300, height=42, bg=GRIS, highlightthickness=0)
+
+    def draw_timeline():
+        timeline.delete("all")
+        n = len(SPEED_PRESETS)
+        margin, cy = 24, 15
+        step = (300 - 2 * margin) / (n - 1)
+        timeline.create_line(margin, cy, 300 - margin, cy, fill="#555555", width=2)
+        if speed_idx > 0:
+            timeline.create_line(margin, cy, margin + speed_idx * step, cy,
+                                  fill="#FF6666", width=3)
+        for i, (label, _) in enumerate(SPEED_PRESETS):
+            x = margin + i * step
+            r = 7 if i == speed_idx else 4
+            color = "#FF6666" if i <= speed_idx else "#666666"
+            timeline.create_oval(x - r, cy - r, x + r, cy + r, fill=color, outline="")
+            timeline.create_text(x, 34, text=label.split()[0],
+                                  fill="#DDDDDD" if i <= speed_idx else "#888888",
+                                  font=("Arial", 7))
+
+    def change_speed(delta):
+        global speed_idx
+        speed_idx = max(0, min(len(SPEED_PRESETS) - 1, speed_idx + delta))
+        name_var.set(SPEED_PRESETS[speed_idx][0])
+        ms_var.set(f"{int(SPEED_PRESETS[speed_idx][1] * 1000)} ms / key")
+        draw_timeline()
+
+    row = tk.Frame(speed_window, bg=GRIS)
+    row.pack(pady=(10, 4))
+
+    tk.Button(row, text="◀", font=("Arial", 11), bg=GRIS_CLARO, fg="white",
+              relief="flat", bd=0, padx=8, pady=3,
+              command=lambda: change_speed(-1)).pack(side="left", padx=6)
+
+    info = tk.Frame(row, bg=GRIS)
+    info.pack(side="left", padx=4)
+    tk.Label(info, textvariable=name_var, font=("Arial", 11, "bold"),
+             bg=GRIS, fg="white", width=9).pack()
+    tk.Label(info, textvariable=ms_var, font=("Arial", 8),
+             bg=GRIS, fg="#AAAAAA").pack()
+
+    tk.Button(row, text="▶", font=("Arial", 11), bg=GRIS_CLARO, fg="white",
+              relief="flat", bd=0, padx=8, pady=3,
+              command=lambda: change_speed(+1)).pack(side="left", padx=6)
+
+    timeline.pack(pady=(0, 4))
+    draw_timeline()
+
+
 def crear_icono():
     # Generate a 64x64 pastel green circle with a white K for the window icon
     size = 64
@@ -98,8 +178,13 @@ ventana.configure(bg=GRIS)
 icono = crear_icono()
 ventana.iconphoto(True, icono)
 
-# Section label above the text area
-tk.Label(ventana, text="TEXT TO TYPE", font=("Arial", 11), bg=GRIS, fg="white").pack(pady=(15, 5))
+# Top bar: section label + speed button
+frame_top = tk.Frame(ventana, bg=GRIS)
+frame_top.pack(fill="x", padx=15, pady=(15, 5))
+tk.Label(frame_top, text="TEXT TO TYPE", font=("Arial", 11), bg=GRIS, fg="white").pack(side="left")
+tk.Button(frame_top, text="⚡ Speed", font=("Arial", 9), bg=GRIS_CLARO, fg="white",
+          relief="flat", bd=0, padx=7, pady=2,
+          command=toggle_speed_window).pack(side="right")
 
 # Canvas used to render a rounded rectangle background behind the text area
 canvas_cuadro = tk.Canvas(ventana, bg=GRIS, highlightthickness=0)
