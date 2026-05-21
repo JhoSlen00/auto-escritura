@@ -44,6 +44,27 @@ between each section, allowing you to fill multiple fields in sequence.
 **Clear text**
 Deletes everything in the text area.
 
+**⚡ Speed**
+Opens the typing speed control window. Click it again to close it.
+The window is resizable and stays linked to the main window.
+
+
+## Typing speed
+
+Click the **⚡ Speed** button at the top right to open the speed panel.
+Use the **◀** and **▶** arrows to cycle through five presets:
+
+| Preset    | Interval per key |
+|-----------|-----------------|
+| Very Slow | 150 ms          |
+| Slow      | 80 ms           |
+| Normal    | 30 ms (default) |
+| Fast      | 10 ms           |
+| Turbo     | 3 ms            |
+
+A timeline at the bottom of the panel shows your current position across all presets.
+The selected speed applies immediately to the next typing session.
+
 
 ## Wait (seconds) field
 
